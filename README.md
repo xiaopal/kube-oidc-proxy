@@ -7,4 +7,4 @@ docker run --rm -p 80:80 \
 -e PROXY_PASS=http://127.0.0.1:9090 \
 xiaopal/kube-oidc-proxy:latest
 
-touch 0505
+touch 0505/build
