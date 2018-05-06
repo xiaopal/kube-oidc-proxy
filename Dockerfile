@@ -1,8 +1,9 @@
 FROM debian:jessie-backports
 
-ARG MOD_AUTH_OPENIDC=libapache2-mod-auth-openidc_2.3.3-1.jessie.1_amd64.deb
+ARG MOD_AUTH_OPENIDC_VER=2.3.4
+ARG MOD_AUTH_OPENIDC=libapache2-mod-auth-openidc_${MOD_AUTH_OPENIDC_VER}-1.jessie.1_amd64.deb
 RUN apt-get update && apt-get install -y apache2 libjansson4 libhiredis0.10 libcurl3 libcjose0 wget && \
-	wget "https://github.com/zmartzone/mod_auth_openidc/releases/download/v2.3.3/$MOD_AUTH_OPENIDC" && \
+	wget "https://github.com/zmartzone/mod_auth_openidc/releases/download/v$MOD_AUTH_OPENIDC_VER/$MOD_AUTH_OPENIDC" && \
 	dpkg -i "$MOD_AUTH_OPENIDC" && \
 	rm -r /var/lib/apt/lists/*
 
