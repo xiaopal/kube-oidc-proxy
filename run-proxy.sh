@@ -18,6 +18,16 @@ export PROXY_PASS="${PROXY_PASS%/}"
     exit 1
 }
 
+OIDC_DISCOVERY_CACHE="$(curl -sSL "$OIDC_DISCOVERY")" && [ ! -z "$OIDC_DISCOVERY_CACHE" ] || {
+    echo "Failed to access $OIDC_DISCOVERY"
+    exit 1
+}
+export OIDC_ISSUER="$(jq -r '.issuer//empty'<<<"$OIDC_DISCOVERY_CACHE")"
+[ ! -z "$OIDC_PUBLIC_KEY" ] || {
+    OIDC_JWKS_URI="$(jq -r '.jwks_uri//empty'<<<"$OIDC_DISCOVERY_CACHE")"
+    [ ! -z "$OIDC_JWKS_URI" ] && export OIDC_PUBLIC_KEY="$(curl -sSL "$OIDC_JWKS_URI" | jwks2pem)"
+}
+
 mkdir -p /etc/kube-oidc-proxy && cat<<EOF >/etc/kube-oidc-proxy/global.inc
 env OIDC_DISCOVERY;
 env OIDC_CLIENT_ID;
