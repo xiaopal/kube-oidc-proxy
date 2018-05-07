@@ -1,17 +1,17 @@
-FROM debian:jessie-backports
+FROM openresty/openresty:1.13.6.1-alpine
 
-ARG MOD_AUTH_OPENIDC=libapache2-mod-auth-openidc_2.3.3-1.jessie.1_amd64.deb
-RUN apt-get update && apt-get install -y apache2 libjansson4 libhiredis0.10 libcurl3 libcjose0 wget && \
-	wget "https://github.com/zmartzone/mod_auth_openidc/releases/download/v2.3.3/$MOD_AUTH_OPENIDC" && \
-	dpkg -i "$MOD_AUTH_OPENIDC" && \
-	rm -r /var/lib/apt/lists/*
+RUN apk add --no-cache curl bash && mkdir /build && cd /build && \
+ curl -sSL https://github.com/bungle/lua-resty-session/archive/v2.22.tar.gz | tar -zx && \
+ curl -sSL https://github.com/pintsized/lua-resty-http/archive/v0.12.tar.gz | tar -zx  && \
+ curl -sSL https://github.com/zmartzone/lua-resty-openidc/archive/v1.5.4.tar.gz | tar -zx && \
+ curl -sSL https://github.com/SkyLothar/lua-resty-jwt/releases/download/v0.1.11/lua-resty-jwt-0.1.11.tar.gz | tar -zx && \
+ cp -r */lib/resty/* /usr/local/openresty/lualib/resty/ && \
+ curl -sSL 'https://npc.nos-eastchina1.126.net/dl/jq_1.5_linux_amd64.tar.gz' | tar -zx -C /usr/bin && \
+ curl -sSL 'https://npc.nos-eastchina1.126.net/dl/jwks2pem.tar.gz' | tar -zx -C /usr/bin && \
+ rm -rf /build
 
-ADD proxy.conf /etc/apache2/sites-available/000-default.conf
+ADD openidc_v1.5.4-patch.lua /usr/local/openresty/lualib/resty/openidc.lua
+ADD nginx.conf /usr/local/openresty/nginx/conf/
 ADD run-proxy.sh /
-RUN ln -sf /etc/apache2/mods-available/auth_openidc.load /etc/apache2/mods-enabled/ && \
-	ln -sf /etc/apache2/mods-available/proxy.load /etc/apache2/mods-enabled/ && \
-	ln -sf /etc/apache2/mods-available/proxy_http.load /etc/apache2/mods-enabled/ && \
-	ln -sf /etc/apache2/mods-available/headers.load /etc/apache2/mods-enabled/ && \
-	chmod 0755 /run-proxy.sh
-		
+RUN chmod 0755 /run-proxy.sh
 CMD [ "/run-proxy.sh" ]
