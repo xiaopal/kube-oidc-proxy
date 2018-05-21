@@ -12,6 +12,6 @@ RUN apk add --no-cache curl bash && mkdir /build && cd /build && \
 
 ADD openidc_v1.5.4-patch.lua /usr/local/openresty/lualib/resty/openidc.lua
 ADD nginx.conf /usr/local/openresty/nginx/conf/
-ADD run-proxy.sh /
-RUN chmod 0755 /run-proxy.sh
+ADD setup-and-exec.sh run-proxy.sh /
+RUN chmod 0755 /setup-and-exec.sh /run-proxy.sh
 CMD [ "/run-proxy.sh" ]
