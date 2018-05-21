@@ -950,13 +950,15 @@ local function openidc_authorization_response(opts, session)
     if json.refresh_token ~= nil then
       session.data.refresh_token = json.refresh_token
     end
-  -- patch begin:
-    if opts.id_token_refresh_interval and (opts.id_token_refresh_interval + current_time < session.data.access_token_expiration) then
-      session.data.access_token_expiration = opts.id_token_refresh_interval + current_time
+  -- patch begin: 根据 id_token 有效期设置 access_token 过期时间
+    if opts.id_token_refresh then
+      if opts.id_token_refresh_interval and (opts.id_token_refresh_interval + current_time < session.data.access_token_expiration) then
+        session.data.access_token_expiration = opts.id_token_refresh_interval + current_time
+      end
+      if id_token.exp and (id_token.exp < session.data.access_token_expiration) then
+        session.data.access_token_expiration = id_token.exp
+      end 
     end
-    if id_token.exp and (id_token.exp < session.data.access_token_expiration) then
-      session.data.access_token_expiration = id_token.exp
-    end 
   -- patch end:
   end
 
@@ -1107,35 +1109,37 @@ local function openidc_access_token(opts, session, try_to_renew)
     session.data.refresh_token = json.refresh_token
   end
 
-  -- patch begin:
-  local jwt_obj
-  jwt_obj, err = openidc_load_jwt_and_verify_crypto(opts, json.id_token, opts.secret, opts.client_secret,
-      opts.discovery.id_token_signing_alg_values_supported)
-  if err then
-    local alg = (jwt_obj and jwt_obj.header and jwt_obj.header.alg) or ''
-    ngx.log(ngx.WARN, "id_token '" .. alg .. "' signature verification failed")
-  else
-    local id_token = jwt_obj.payload
-
-    ngx.log(ngx.DEBUG, "id_token header: ", cjson.encode(jwt_obj.header))
-    ngx.log(ngx.DEBUG, "id_token payload: ", cjson.encode(jwt_obj.payload))
-  
-    -- validate the id_token contents
-    if openidc_validate_id_token(opts, id_token, session.data.nonce) == false then
-      ngx.log(ngx.WARN, "id_token validation failed")
+  -- patch begin: 验证 id_token 同时更新 session 中的 id_token
+  if opts.id_token_refresh then
+    local jwt_obj
+    jwt_obj, err = openidc_load_jwt_and_verify_crypto(opts, json.id_token, opts.secret, opts.client_secret,
+        opts.discovery.id_token_signing_alg_values_supported)
+    if err then
+      local alg = (jwt_obj and jwt_obj.header and jwt_obj.header.alg) or ''
+      ngx.log(ngx.WARN, "id_token '" .. alg .. "' signature verification failed")
     else
-      if store_in_session(opts, 'id_token') then
-        session.data.id_token = id_token
-      end
-      if store_in_session(opts, 'enc_id_token') then
-        session.data.enc_id_token = json.id_token
-      end
-      if opts.id_token_refresh_interval and (opts.id_token_refresh_interval + current_time < session.data.access_token_expiration) then
-        session.data.access_token_expiration = opts.id_token_refresh_interval + current_time
-      end
-      if id_token.exp and (id_token.exp < session.data.access_token_expiration) then
-        session.data.access_token_expiration = id_token.exp
-      end 
+      local id_token = jwt_obj.payload
+  
+      ngx.log(ngx.DEBUG, "id_token header: ", cjson.encode(jwt_obj.header))
+      ngx.log(ngx.DEBUG, "id_token payload: ", cjson.encode(jwt_obj.payload))
+    
+      -- validate the id_token contents
+      if openidc_validate_id_token(opts, id_token, session.data.nonce) == false then
+        ngx.log(ngx.WARN, "id_token validation failed")
+      else
+        if store_in_session(opts, 'id_token') then
+          session.data.id_token = id_token
+        end
+        if store_in_session(opts, 'enc_id_token') then
+          session.data.enc_id_token = json.id_token
+        end
+        if opts.id_token_refresh_interval and (opts.id_token_refresh_interval + current_time < session.data.access_token_expiration) then
+          session.data.access_token_expiration = opts.id_token_refresh_interval + current_time
+        end
+        if id_token.exp and (id_token.exp < session.data.access_token_expiration) then
+          session.data.access_token_expiration = id_token.exp
+        end 
+      end    
     end    
   end
   -- patch end:
