@@ -48,10 +48,10 @@ config_session(){
 
 rm -f "$NGINX_CONFIG/$CONFIG_NAME.sessions_"
 [ -z "$OIDC_CLIENT_ID" ] || config_session || exit 1
-for CONFIG in ${OIDC_CONFIG_PATH//[ ;,:]/ }; do
+OIDC_CONFIG_PATH="${OIDC_CONFIG_PATH:-/etc/$CONFIG_NAME}" && for CONFIG in ${OIDC_CONFIG_PATH//[ ;,:]/ }; do
     [ -d "$CONFIG" ] && for SESSION_CONF in "${CONFIG%/}"/*.conf; do
         [ -f "$SESSION_CONF" ] || continue
-        ( SESSION_NAME="${SESSION_CONF%%.*}" && SESSION_NAME="${SESSION_CONF##*/}" && . "$SESSION_CONF" && config_session ) || exit 1
+        ( SESSION_NAME="${SESSION_CONF%%.*}" && SESSION_NAME="${SESSION_NAME##*/}" && . "$SESSION_CONF" && config_session ) || exit 1
     done 
 done
 [ ! -f "$NGINX_CONFIG/$CONFIG_NAME.sessions_" ] || \
