@@ -43,4 +43,4 @@ EOF
 NGINX_CONFIG_PATH="/etc" \
 OIDC_CONFIG="kube-oidc-proxy" \
 OIDC_JWKS_PREFETCH='Y' \
-exec /setup-and-exec.sh /usr/local/openresty/bin/openresty -g "daemon off;"
+exec /setup.sh /usr/local/openresty/bin/openresty -g "daemon off;"

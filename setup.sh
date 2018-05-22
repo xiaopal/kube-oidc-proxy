@@ -57,7 +57,6 @@ mkdir -p "$CONFIG" && (
 
 ( exec >"$NGINX_CONFIG/$CONFIG_NAME.http"
 cat<<EOF
-    lua_shared_dict oidc 10m;
     init_by_lua_block {
         local cjson = require("cjson")
         oidc_sessions = cjson.decode($([ -f "$NGINX_CONFIG/$CONFIG_NAME.sessions" ] && jq -c 'tojson' "$NGINX_CONFIG/$CONFIG_NAME.sessions" || echo '"{}"'))
@@ -169,4 +168,4 @@ cat<<\EOF
 EOF
 )
 
-[ -z "$*" ] || { echo "$*" >&2 && exec "$@"; }
+[ -z "$1" ] || { echo "$*" >&2 && exec "$@"; }
